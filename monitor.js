@@ -33,6 +33,8 @@ async function checkHttpEndpoint() {
   try {
     await axios.get(HTTP_URL, { timeout: 5000 });
     const elapsed = Date.now() - start;
+
+    console.log(`${new Date().toISOString()} - HTTP response time: ${elapsed}ms`);
     
     if (elapsed > 5000) {
       notify(`HTTP lento: ${elapsed}ms`);
@@ -64,6 +66,7 @@ function connectWebSocket() {
 
   ws.on('message', () => {
     lastMessageTime = Date.now();
+    console.log(`${new Date().toISOString()} - Websocket message received`);
   });
 
   ws.on('close', () => {
