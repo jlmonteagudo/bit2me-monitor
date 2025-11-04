@@ -64,7 +64,10 @@ function connectWebSocket() {
     lastMessageTime = Date.now();
   });
 
-  ws.on('message', () => {
+  ws.on('message', (message) => {
+    const data = JSON.parse(message.toString());
+    if (data.event === 'pong') return;
+
     lastMessageTime = Date.now();
     console.log(`${new Date().toISOString()} - Websocket message received`);
   });
