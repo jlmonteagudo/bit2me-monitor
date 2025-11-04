@@ -95,8 +95,6 @@ setInterval(() => {
   const secondsSinceLast = (Date.now() - lastMessageTime) / 1000;
   if (secondsSinceLast > 60) {
     notify("⏱ Más de 60s sin mensajes del WebSocket");
-    ws.terminate();
-    connectWebSocket();
   }
 }, 10_000);
 
