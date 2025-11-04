@@ -80,6 +80,13 @@ function connectWebSocket() {
   });
 }
 
+// Ping al WebSocket cada 10s
+setInterval(() => {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ event: 'ping' }));
+  }
+}, 10_000);
+
 // Chequeo de inactividad WS cada 10s
 setInterval(() => {
   const secondsSinceLast = (Date.now() - lastMessageTime) / 1000;
