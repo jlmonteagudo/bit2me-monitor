@@ -9,6 +9,7 @@ const HTTP_URL = "https://gateway.bit2me.com/alive";
 let totalChecks = 0;
 let successfulChecks = 0;
 let failedChecks = 0;
+let slowChecks = 0;
 
 // ======= NOTIFICATION FUNCTIONS ======= //
 async function notify(msg) {
@@ -40,6 +41,7 @@ async function checkHttpEndpoint() {
     successfulChecks++;
     
     if (elapsed > 1000) {
+      slowChecks++;
       notify(`HTTP slow: ${elapsed}ms`);
     }
   } catch (err) {
@@ -55,6 +57,7 @@ setInterval(() => {
   const msg = `📊 HTTP monitoring summary\n\n` +
     `Total checks: ${totalChecks}\n` +
     `✅ Successful: ${successfulChecks}\n` +
+    `⚠️ Slow: ${slowChecks}\n` +
     `❌ Failed: ${failedChecks}`;
   
   notify(msg);
@@ -63,5 +66,6 @@ setInterval(() => {
   totalChecks = 0;
   successfulChecks = 0;
   failedChecks = 0;
+  slowChecks = 0;
 }, 600_000); // 10 minutes
 
