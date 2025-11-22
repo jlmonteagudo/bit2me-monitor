@@ -1,9 +1,15 @@
 import axios from 'axios';
+import https from 'https';
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 const HTTP_URL = "https://gateway.bit2me.com/alive";
+
+const httpsAgent = new https.Agent({
+  keepAlive: true,
+  timeout: 60000, // Socket timeout
+});
 
 // ======= COUNTERS ======= //
 let totalChecks = 0;
@@ -31,15 +37,18 @@ async function notify(msg) {
 async function checkHttpEndpoint() {
   const start = Date.now();
   totalChecks++;
-  
+
   try {
-    await axios.get(HTTP_URL, { timeout: 2000 });
+    await axios.get(HTTP_URL, {
+      timeout: 2000,
+      httpsAgent
+    });
     const elapsed = Date.now() - start;
 
     console.log(`${new Date().toISOString()} - HTTP response time: ${elapsed}ms`);
-    
+
     successfulChecks++;
-    
+
     if (elapsed > 1000) {
       slowChecks++;
       notify(`HTTP slow: ${elapsed}ms`);
@@ -59,9 +68,9 @@ setInterval(() => {
     `✅ Successful: ${successfulChecks}\n` +
     `⚠️ Slow: ${slowChecks}\n` +
     `❌ Failed: ${failedChecks}`;
-  
+
   notify(msg);
-  
+
   // Reset counters after sending summary
   totalChecks = 0;
   successfulChecks = 0;
