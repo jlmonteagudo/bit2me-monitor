@@ -5,6 +5,7 @@ const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 const HTTP_URL = "https://gateway.bit2me.com/alive";
+const LIVENESS_URL = "https://gateway.bit2me.com/v1/health/liveness";
 
 const httpsAgent = new https.Agent({
   keepAlive: true,
@@ -12,10 +13,17 @@ const httpsAgent = new https.Agent({
 });
 
 // ======= COUNTERS ======= //
+// Alive endpoint counters
 let totalChecks = 0;
 let successfulChecks = 0;
 let failedChecks = 0;
 let slowChecks = 0;
+
+// Liveness endpoint counters
+let totalChecksLiveness = 0;
+let successfulChecksLiveness = 0;
+let failedChecksLiveness = 0;
+let slowChecksLiveness = 0;
 
 // ======= NOTIFICATION FUNCTIONS ======= //
 async function notify(msg) {
@@ -59,15 +67,49 @@ async function checkHttpEndpoint() {
   }
 }
 
+// ======= CHECK LIVENESS ======= //
+async function checkLivenessEndpoint() {
+  const start = Date.now();
+  totalChecksLiveness++;
+
+  try {
+    const response = await axios.get(LIVENESS_URL, {
+      timeout: 2000,
+      httpsAgent,
+      validateStatus: (status) => status === 204 || status < 500 // Accept 204 and other success codes
+    });
+    const elapsed = Date.now() - start;
+
+    console.log(`${new Date().toISOString()} - Liveness response time: ${elapsed}ms (status: ${response.status})`);
+
+    successfulChecksLiveness++;
+
+    if (elapsed > 1000) {
+      slowChecksLiveness++;
+      notify(`Liveness slow: ${elapsed}ms`);
+    }
+  } catch (err) {
+    failedChecksLiveness++;
+    notify("ERROR Liveness: " + err.message);
+  }
+}
+
 setInterval(checkHttpEndpoint, 2_000);
+setInterval(checkLivenessEndpoint, 2_000);
 
 // ======= SUMMARY EVERY 10 MINUTES ======= //
 setInterval(() => {
   const msg = `📊 HTTP monitoring summary\n\n` +
-    `Total checks: ${totalChecks}\n` +
-    `✅ Successful: ${successfulChecks}\n` +
-    `⚠️ Slow: ${slowChecks}\n` +
-    `❌ Failed: ${failedChecks}`;
+    `🔗 /alive endpoint:\n` +
+    `  Total checks: ${totalChecks}\n` +
+    `  ✅ Successful: ${successfulChecks}\n` +
+    `  ⚠️ Slow: ${slowChecks}\n` +
+    `  ❌ Failed: ${failedChecks}\n\n` +
+    `🔗 /v1/health/liveness endpoint:\n` +
+    `  Total checks: ${totalChecksLiveness}\n` +
+    `  ✅ Successful: ${successfulChecksLiveness}\n` +
+    `  ⚠️ Slow: ${slowChecksLiveness}\n` +
+    `  ❌ Failed: ${failedChecksLiveness}`;
 
   notify(msg);
 
@@ -76,5 +118,9 @@ setInterval(() => {
   successfulChecks = 0;
   failedChecks = 0;
   slowChecks = 0;
+  totalChecksLiveness = 0;
+  successfulChecksLiveness = 0;
+  failedChecksLiveness = 0;
+  slowChecksLiveness = 0;
 }, 600_000); // 10 minutes
 
